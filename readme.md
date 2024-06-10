@@ -8,7 +8,7 @@
 | `jest`                        | 'Runs our tests, reports results'                        |
 | `js/dom`                      | ''Simulates a browser when running in a Node environment |
 
-## Test parts
+## Steps in writing the test
 
 - render the component
 - manipulate the component or find an element in it
@@ -86,8 +86,334 @@ A matcher is going to take a look at the value we passed in and make sure that s
 
 ### Matchers from Jest
 
-```mermaid
+- expect(['a','b']).toHaveLength(2) -->Makes sure the value is an array with a particular length
+- expect(5).toEqual(5) --> Makes sure the value equals another value
+- expect(['a','b','c']).toContain('b') --> Makes sure an array contains a value
+- expect(fn).toThrow() --> Makes sure a function throws an error when called
+- expect(mock).toHaveBeenCalled() --> Makes sure a mock function has been called
 
-[Need to test form submission?] --> [You need to find a button to click!]
+### Matchers for RTL (jest-dom)
 
+- expect(element).toBeInTheDocument() --> Makes sure element is present on the page
+- expect(element).toBeEnabled() --> Makes sure an element (like an input) is not disabled
+- expect(element).toHaveClass() --> Makes sure an element has a class name
+- expect(element).toHaveTextContent() --> Makes sure an element has some particular text
+- expect(element).toHaveValue() --> Makes sure an input, select, or textarea has value
+
+# Testing Library User - `@testing-library/user-event`
+
+## User Event
+
+When we import the user event library, we get an object called user.
+
+This object has a couple of functions tied to it that allow us to simulate very common user events such as clicking and typing.
+
+```node
+import user from '@testing-library/user-event';
 ```
+
+Example
+
+- user.click(element); -> Simulates clicking on the provided element
+- user.keyboard('textValue') -> Simulates typing
+- user.keyboard('{Enter}'); -> Simulates pressing the enter key
+
+### @testing-library/user-event: `user.type` vs `user.keyboard`
+
+In the context of `@testing-library/user-event`, `user.type` and `user.keyboard` serve different purposes for simulating user interactions with a web application. Below is an overview of each method and when to use them:
+
+### `user.type`
+
+The `user.type` method is used to simulate typing into input elements (e.g., text inputs, textareas). It provides a high-level abstraction that mimics how a user types text into an input field. This method handles events like `keydown`, `keypress`, `input`, and `keyup`, which are typically triggered when a user types on their keyboard.
+
+### Usage
+
+```javascript
+import userEvent from '@testing-library/user-event';
+import { render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom/extend-expect';
+import MyComponent from './MyComponent'; // Replace with your component
+
+test('user types into an input field', () => {
+  render(<MyComponent />);
+  const input = screen.getByRole('textbox');
+  userEvent.type(input, 'Hello, world!');
+  expect(input).toHaveValue('Hello, world!');
+});
+```
+
+### `user.keyboard`
+
+The `user.keyboard` method is used to simulate keyboard interactions, including typing specific keys, key combinations (e.g., Ctrl+C, Shift+Tab), and sequences of key presses. It is more flexible and lower-level than `user.type`, allowing you to simulate complex keyboard interactions that go beyond simple text input.
+
+```javascript
+import userEvent from '@testing-library/user-event';
+import { render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom/extend-expect';
+import MyComponent from './MyComponent'; // Replace with your component
+
+test('user navigates with the keyboard', () => {
+  render(<MyComponent />);
+  const input = screen.getByRole('textbox');
+  input.focus();
+  userEvent.keyboard('Hello{arrowleft}world{space}');
+  expect(input).toHaveValue('Hellworld o');
+  expect(input.selectionStart).toBe(7); // Cursor position after 'Hello'
+});
+```
+
+### Summary
+
+user.type: Use for simple text input into form fields. It's a higher-level abstraction that simplifies simulating user typing.
+user.keyboard: Use for more complex keyboard interactions, such as navigating within the text, pressing special keys, or simulating key combinations.
+
+# Jest `jest`
+
+## Mock Functions
+
+Consider we are testing the below component
+
+```Javascript
+import { useState } from 'react';
+
+function UserForm({ onUserAdd }) {
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    onUserAdd({ name, email });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label htmlFor="name">Name</label>
+        <input
+          value={name}
+          id="name"
+          onChange={(e) => setName(e.target.value)}
+        />
+      </div>
+      <div>
+        <label htmlFor="email">Email</label>
+        <input
+          value={email}
+          id="email"
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </div>
+      <button>Add User</button>
+    </form>
+  );
+}
+
+export default UserForm;
+```
+
+Heres the test case we write for this
+
+```Javascript
+test('form is submitted', async () => {
+
+    // Render the component
+    render(<UserForm />);
+
+    // Find two inputs
+    const [nameInput, emailInput] = screen.getAllByRole('textbox');
+
+    // Simulate typing in a name
+    await user.click(nameInput);
+    await user.keyboard('Hello{arrowleft}world ');
+
+    // Simulate typing in an email
+    await user.click(emailInput);
+    await user.keyboard('hello@mail.com');
+
+    // Find the button
+    // Simulate clicking the button
+    const button = screen.getByRole('button');
+    await user.click(button);
+
+    // Assertion to make sure 'onUserAdd' gets called with email/name
+  });
+```
+
+The above test will fail with the following error:
+
+> TypeError: onUserAdd is not a function
+> 8 | event.preventDefault();  
+> 9 |
+> 10 | onUserAdd({ name, email });
+> | ^
+> 11 | };
+
+This happens because right now we are not passing onUserAdd in the test to the component. So form submission results to calling `undefined({name, email})`
+
+To fix this we need a proper declaration, now we can declare the function like below.
+This works but it **won't be the best implementation**
+
+```javascript
+test('it calls onUserAdd when the form is submitted', async () => {
+  // ! NOT THE BEST IMPLEMENTATION
+  const argList = [];
+  const callback = (...args) => {
+    argList.push(args);
+  };
+
+  // Render the component
+  render(<UserForm onUserAdd={callback} />);
+
+  // Find two inputs
+  const [nameInput, emailInput] = screen.getAllByRole('textbox');
+
+  // Simulate typing in a name
+  await user.click(nameInput);
+  await user.keyboard('Hello{arrowleft}world ');
+
+  // Simulate typing in an email
+  await user.click(emailInput);
+  await user.keyboard('hello@mail.com');
+
+  // Find the button
+  // Simulate clicking the button
+  const button = screen.getByRole('button');
+  await user.click(button);
+
+  // Assertion to make sure 'onUserAdd' gets called with email/name
+  expect(argList).toHaveLength(1);
+  expect(argList[0][0]).toEqual({
+    name: 'Hellworld o',
+    email: 'hello@mail.com',
+  });
+});
+```
+
+### What is a mock function?
+
+A mock function is a fake function that doesn't really do anything when it is called.
+
+All it does is record the fact that it got called and also records the arguments that it was called with.
+
+```javascript
+const callback = (...args) => {
+  argList.push(args);
+};
+```
+
+So you can think of it as being almost identical to this very simple code that we just put together right here. This is a function that doesn't really do anything when it is called. It just records whatever arguments are received. That's it.
+
+- `mock` means not `not real`
+- Fake function that does not do anything
+- Records whenever it gets called, and the arguments it was called with
+- Used very often when we need to make sure a component calls a callback
+
+```javascript
+// -> BETTER IMPLEMENTATION FOR ABOVE TEST
+test('calls onUserAdd when the form is submitted', async () => {
+  const mock = jest.fn();
+
+  // Render
+  render(<UserForm onUserAdd={mock} />);
+
+  // Matchers
+  const [nameInput, emailInput] = screen.getAllByRole('textbox');
+
+  await user.click(nameInput);
+  await user.keyboard('jane');
+
+  await user.click(emailInput);
+  await user.keyboard('jane@mail.com');
+
+  const button = screen.getByRole('button');
+  await user.click(button);
+
+  // Assertions
+  expect(mock).toHaveBeenCalled();
+  expect(mock).toHaveBeenCalledWith({ name: 'jane', email: 'jane@mail.com' });
+});
+```
+
+# Prefer Roles Over `data-testid`
+
+Using roles with React Testing Library (RTL) is a good practice as it helps to decouple the test logic from the implementation details of the component. By using roles, you can write more resilient tests that are less likely to break when the implementation of the component changes.
+
+## 1. Prefer `role` over `testId`
+
+Instead of using specific test IDs (`data-testid`) to access elements, try to use roles whenever possible. Roles allow you to define the purpose of an element within the context of the component, making the tests more meaningful and easier to understand. For example, you might use roles like `button`, `input`, `form`, `heading`, etc.
+
+React Testing Library recommends using roles to select elements over `data-testid` for several reasons:
+
+### User-Centric Testing
+
+Selecting elements by their role encourages testing from the perspective of how a user interacts with the application. This aligns the tests more closely with actual user behavior, ensuring that the elements are accessible and usable in a real-world scenario.
+
+### Accessibility
+
+Roles are an essential part of web accessibility. By selecting elements based on their roles, you implicitly test the accessibility features of your application. This practice helps ensure that your application is usable by people who rely on assistive technologies.
+
+### Maintenance
+
+Tests that rely on `data-testid` attributes can become harder to maintain. The `data-testid` attributes are not part of the user experience and can be removed or changed without affecting functionality. On the other hand, roles are less likely to change, making your tests more stable and resilient to refactoring.
+
+### Reflecting Best Practices
+
+Encouraging the use of roles promotes better coding practices. Developers are more likely to use semantic HTML and ARIA roles correctly, which improves both the accessibility and overall quality of the code.
+
+### Readability
+
+Tests that select elements based on roles tend to be more readable and self-explanatory. They describe what the user is interacting with in a way that is immediately clear, which can make understanding and maintaining tests easier.
+
+### Example
+
+Here’s an example to illustrate the difference:
+
+**Using `data-testid`:**
+
+```jsx
+<button data-testid="submit-button">Submit</button>
+```
+
+```javascript
+const button = getByTestId('submit-button');
+```
+
+**Using role:**
+
+```jsx
+<button role="button">Submit</button>
+```
+
+```javascript
+const button = getByRole('button', { name: /submit/i });
+```
+
+In the second example, the test not only finds the button but also confirms that it is accessible with the correct label, enhancing both the accessibility and reliability of your tests.
+
+## 2. Use `logRole` for Debugging
+
+If you are unsure about the available roles in a rendered component, React Testing Library provides a helpful method called `logRole`. This method can be used to log all the elements with their respective roles, making it easier to identify and select elements during testing. You can use it like this:
+
+```javascript
+import { render, screen } from '@testing-library/react';
+
+test('example test with logRole', () => {
+  render(<YourComponent />);
+  screen.logRole(); // Log elements with roles to the console
+  // …rest of your test logic
+});
+```
+
+By checking the console output, you will see a list of components and their roles, which can be helpful for selecting elements in your tests.
+
+# Testing-Library/ React
+
+## Debugging
+
+### Help with query functions
+
+Memorizing all the query functions to find elements + roles is hard
+To get help with finding a particular element, use this helper function - `screen.logTestingPlaygroundURL()`
+The above function takes the HTML currently rendered by your component and creates a link to view that HTML in the **Testing Playground** tool.
+Testing Playground helps you write queries (function to find elements)
