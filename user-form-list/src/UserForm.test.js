@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import UserForm from './UserForm';
 import user from '@testing-library/user-event';
 
@@ -51,7 +51,7 @@ describe('userform tests', () => {
     });
   });
 
-  // -> BEST IMPLEMENTATION FOR ABOVE TEST
+  // -> BETTER IMPLEMENTATION FOR ABOVE TEST
   test('calls onUserAdd when the form is submitted', async () => {
     const mock = jest.fn();
 

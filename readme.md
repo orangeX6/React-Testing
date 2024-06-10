@@ -1,4 +1,10 @@
-# React Testing document!
+# React Testing Library!
+
+The below guide will help anyone new to react testing.
+
+It briefs over the important concepts of react testing.
+
+The end goal of this guide is that any new developer who has no experience with React testing should be able to write basic react tests.
 
 | Library                       | Purpose                                                  |
 | ----------------------------- | -------------------------------------------------------- |
@@ -411,9 +417,166 @@ By checking the console output, you will see a list of components and their role
 
 ## Debugging
 
-### Help with query functions
+### Testing Playground
 
-Memorizing all the query functions to find elements + roles is hard
+Memorizing all the query functions to find elements + roles is hard.
+
 To get help with finding a particular element, use this helper function - `screen.logTestingPlaygroundURL()`
+
 The above function takes the HTML currently rendered by your component and creates a link to view that HTML in the **Testing Playground** tool.
 Testing Playground helps you write queries (function to find elements)
+
+So you will get the link of the component in the terminal from where you run the test, and the component is rendered based on the components current state.
+For example, below is the component rendered
+
+```javascript
+// UserList component
+function UserList({ users }) {
+  const renderedUsers = users.map((user) => {
+    return (
+      <tr key={user.name}>
+        <td>{user.name}</td>
+        <td>{user.email}</td>
+      </tr>
+    );
+  });
+
+  return (
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+        </tr>
+      </thead>
+      <tbody data-testid="users">{renderedUsers}</tbody>
+    </table>
+  );
+}
+
+export default UserList;
+```
+
+```javascript
+// Test for userlist component
+test('renders one row per user', () => {
+  // Render the component
+  const users = [
+    { name: 'john', email: 'john@mail.com' },
+    { name: 'jane', email: 'jane@jane.com' },
+  ];
+  render(<UserList users={users} />);
+
+  screen.logTestingPlaygroundURL();
+});
+```
+
+When the test is now ran from terminal, notice the console.log of a pretty long URL.
+
+[Testing Playground](https://testing-playground.com/#markup=DwEwlgbgfMAuCGAjANgUxrAFq+IMCcNMoA5eAW1WAHosioBRc+MZGu9w97XDRAexABPAhjwAreADsqtPHAnTUAAWasAdAGN+5dvNpdYhvAGcKesVDPll1rToucYtAcOcIU6GuGhA)
+
+When clicked on this link, it navigates to the page displayed below, and this is the HTML that was produced by our component.
+
+![Testing Playground](image.png)
+
+On the right hand side where we see the preview, we can click on the elements manually and when we do that we get the recommendations in the bottom of how we can write out a query function to find that particular element.
+
+**Short Comings**
+For the above test, we really want to find the rows and get the number of rows present to make assertion.
+
+But if we try to click on these rows, we would not be able to do so. If you're ever in that scenario, we can use a little bit of a trick. We can add in some custom styling to the HTML right here directly just to add in some additional padding, essentially to make elements easier to click as shown in image below.
+
+![Testing Playground Select Rows](image-1.png)
+
+Now the test becomes
+
+```javascript
+test('renders one row per user', () => {
+  // Render the component
+  const users = [
+    { name: 'jane', email: 'jane@mail.com' },
+    { name: 'sam', email: 'sam@sam.com' },
+  ];
+
+  render(<UserList users={users} />);
+
+  // screen.logTestingPlaygroundURL();
+
+  // Find all the rows in the table
+  const rows = screen.getAllByRole('row');
+
+  // Assertion: correct number of rows in the table
+  expect(rows).toHaveLength(2);
+});
+```
+
+### Querying Within Elements
+
+> The above test actually **fails** as we get three rows instead of two as there is header row as wel
+
+- Sometimes finding elements by role just doesn't work well
+- In these cases we can use two other ways to find elements when the preferred `role` approach does not work
+  - data-testid
+  - container.querySelector()
+
+**Within** (an alias to getQueriesForElement) takes a DOM element and binds it to the raw query functions, allowing them to be used without specifying a container.
+
+It is the recommended approach for libraries built on this API and is used under the hood in React Testing Library.
+
+[Testing library within](https://testing-library.com/docs/dom-testing-library/api-within/)
+
+```javascript
+test('renders one row per user', () => {
+  // Render the component
+  const users = [
+    { name: 'jane', email: 'jane@mail.com' },
+    { name: 'sam', email: 'sam@sam.com' },
+  ];
+
+  render(<UserList users={users} />);
+
+  // screen.logTestingPlaygroundURL();
+
+  // Find all the rows in the table
+  const { getAllByRole } = within(screen.getByTestId('users'));
+  const rows = getAllByRole('row');
+  // OR
+  const rows = within(screen.getByTestId('users')).getAllByRole('row');
+
+  // Assertion: correct number of rows in the table
+  expect(rows).toHaveLength(2);
+});
+```
+
+By using within, you can isolate the scope to table body and then query within that scope.
+
+### Container Query Selector
+
+And when we call render, we're going to get back an object that has a couple of helper properties on it.
+One that we're going to use in this case is called container.
+
+Container is a reference to a HTML element that is automatically added into our component.
+
+In the testing playground, you might have noticed that our component that we are currently testing produces a table as its top level element.
+
+Whenever React testing library takes our component and renders it, it's going to add in an additional div element outside or wrapping our component. This is referred to as the container.
+
+```javascript
+test('renders one row per user (container.querySelector approach)', () => {
+  // Render the component
+  const users = [
+    { name: 'jane', email: 'jane@mail.com' },
+    { name: 'sam', email: 'sam@sam.com' },
+  ];
+
+  const { container } = render(<UserList users={users} />);
+
+  // screen.logTestingPlaygroundURL();
+
+  // Find all the rows in the table
+  const rows = container.querySelectorAll('tbody tr');
+
+  // Assertion: correct number of rows in the table
+  expect(rows).toHaveLength(2);
+});
+```
