@@ -1,15 +1,28 @@
 import { render, screen, within } from '@testing-library/react';
 import UserList from './UserList';
 
+function renderComponent() {
+  // Render the component
+  const users = [
+    { name: 'jane', email: 'jane@mail.com' },
+    { name: 'sam', email: 'sam@sam.com' },
+  ];
+
+  render(<UserList users={users} />);
+
+  return { users };
+}
+
 describe('User list test', () => {
   test('renders one row per user', () => {
     // Render the component
-    const users = [
-      { name: 'jane', email: 'jane@mail.com' },
-      { name: 'sam', email: 'sam@sam.com' },
-    ];
+    renderComponent();
+    // const users = [
+    //   { name: 'jane', email: 'jane@mail.com' },
+    //   { name: 'sam', email: 'sam@sam.com' },
+    // ];
 
-    render(<UserList users={users} />);
+    // render(<UserList users={users} />);
 
     // screen.logTestingPlaygroundURL();
 
@@ -44,12 +57,13 @@ describe('User list test', () => {
 
   test('render the email and name of each user', () => {
     // Render the component
-    const users = [
-      { name: 'jane', email: 'jane@mail.com' },
-      { name: 'sam', email: 'sam@sam.com' },
-    ];
+    const { users } = renderComponent();
+    // const users = [
+    //   { name: 'jane', email: 'jane@mail.com' },
+    //   { name: 'sam', email: 'sam@sam.com' },
+    // ];
 
-    render(<UserList users={users} />);
+    // render(<UserList users={users} />);
 
     // screen.logTestingPlaygroundURL();
 

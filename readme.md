@@ -345,6 +345,8 @@ test('calls onUserAdd when the form is submitted', async () => {
 
 Using roles with React Testing Library (RTL) is a good practice as it helps to decouple the test logic from the implementation details of the component. By using roles, you can write more resilient tests that are less likely to break when the implementation of the component changes.
 
+> Note: Even though roles are preferred sometimes it might be difficult to query for them. Don't be obsessed and spend only a few mins trying to find the role, else use test id instead.
+
 ## 1. Prefer `role` over `testId`
 
 Instead of using specific test IDs (`data-testid`) to access elements, try to use roles whenever possible. Roles allow you to define the purpose of an element within the context of the component, making the tests more meaningful and easier to understand. For example, you might use roles like `button`, `input`, `form`, `heading`, etc.
@@ -510,9 +512,41 @@ test('renders one row per user', () => {
 });
 ```
 
-### Querying Within Elements
+### Using the screen.debug() method
+
+React Testing Library exposes a debug() method from the screen object to print out the state of the DOM.
+
+**Understanding the screen.debug() syntax**
+
+Take a look at the screen.debug() syntax shown below:
+
+```javascript
+screen.debug(element, maxLengthToPrint, options);
+```
+
+- The first parameter of the debug() method is the element we want the screen.debug() method to print out. This parameter can be a single element or multiple elements. If left undefined, it will default to printing the root node.
+
+- The second parameter lets us specify the content length to print. The default output length is 7000, meaning the content will be truncated after seven thousand characters. We can increase or limit the output length as needed.
+
+- We may also want to configure test formatting using the options parameter. For instance, we can turn off syntax highlighting in the terminal with the options parameter as follows:
+
+```javascript
+const messages = document.getElementById('messages');
+
+screen.debug(messages, null, { highlight: false });
+```
+
+[Options properties for debug](https://github.com/jestjs/jest/tree/main/packages/pretty-format#usage-with-options)
+
+### Using the screen.logRole() method
+
+Explained above
+
+## Querying Within Elements
 
 > The above test actually **fails** as we get three rows instead of two as there is header row as wel
+
+![Component HTML](image-2.jpg)
 
 - Sometimes finding elements by role just doesn't work well
 - In these cases we can use two other ways to find elements when the preferred `role` approach does not work
@@ -550,7 +584,7 @@ test('renders one row per user', () => {
 
 By using within, you can isolate the scope to table body and then query within that scope.
 
-### Container Query Selector
+## Container Query Selector
 
 And when we call render, we're going to get back an object that has a couple of helper properties on it.
 One that we're going to use in this case is called container.
