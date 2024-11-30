@@ -6,13 +6,17 @@ It briefs over the important concepts of react testing.
 
 The end goal of this guide is that any new developer who has no experience with React testing should be able to write basic react tests.
 
-| Library                       | Purpose                                                  |
-| ----------------------------- | -------------------------------------------------------- |
-| `@testing-library/react`      | 'Uses ReactDOM to render a component for testing'        |
-| `@testing-library/user-event` | "Helps simulate user input like typing and clicking"     |
-| `@testing-library/dom`        | 'Helps find elements that are rendered by our components |
-| `jest`                        | 'Runs our tests, reports results'                        |
-| `js/dom`                      | ''Simulates a browser when running in a Node environment |
+| Library                      | Docs                                                                   | Purpose                                                  |
+| ---------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------- |
+| React                        | [docs](https://react.dev/learn/)                                       |                                                          |
+| React API                    | [docs](https://react.dev/reference/react/hooks/)                       |                                                          |
+| @testing-library/react       | [docs](https://testing-library.com/docs/react-testing-library/intro/)  | Uses ReactDOM to render a component for testing          |
+| @testing-library/user-event  | [docs](https://testing-library.com/docs/user-event/intro)              | Helps simulate user input like typing and clicking       |
+| @testing-library/dom         | [docs](https://testing-library.com/docs/ecosystem-jest-dom/)           | Helps find elements that are rendered by our components  |
+| jest                         | [docs](https://jestjs.io/docs/using-matchers)                          | Simulates a browser when running in a Node environment   |
+| @testing-library/react-hooks | [docs](https://github.com/testing-library/react-hooks-testing-library) |
+| @testing-library/jest-dom    | [docs](https://github.com/testing-library/jest-dom#custom-matchers)    | Helps find elements that are rendered by our components. |
+| expect                       | [docs](https://jestjs.io/docs/expect)                                  | Used for making assertions                               |
 
 ## Steps in writing the test
 
@@ -72,7 +76,7 @@ Assertions are where we are going to make sure that our component is doing exact
 
 Whenever we want to make an assertion, we're going to use the expect function.
 
-Expect is provided by the just testing framework.
+Expect is provided by the jest testing framework.
 
 It is a global variable, so that means we do not need to import it or anything like that.
 
