@@ -618,3 +618,21 @@ test('renders one row per user (container.querySelector approach)', () => {
   expect(rows).toHaveLength(2);
 });
 ```
+
+## How to Test (The Bug Fixing Process)
+
+### Steps
+
+1. Find the relevant components in the codebase
+2. Figure out how the component is getting its data/state/props
+3. Use a debugger, console log or documentation to understand the data
+4. Implement a fix
+5. Test the fix
+
+** Finding relevant components **
+
+- [React Dev Tools](https://chromewebstore.google.com/detail/react-developer-tools/fmkadmapgofadopljbjfkapdkoienihi?hl=en)
+- Search the codebase for text/icons/classnames that the component is producing
+- If an error is being thrown, look at the stack trace
+
+** Figure out how the component is getting its data/state/props **
